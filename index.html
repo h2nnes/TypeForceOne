@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Type Force Tool – Prototyp</title>
+
+		<link rel="stylesheet" href="style.css" />
+
+		<!-- Paper.js -->
+		<script src="https://unpkg.com/paper@0.12.17/dist/paper-full.js"></script>
+	</head>
+
+	<body>
+		<div id="controls">
+			<textarea id="inputText">Hallo Welt – zieh mich auseinander!</textarea
+			><br />
+			<button id="renderBtn">Render Text</button>
+			<button id="exportBtn">Export SVG</button>
+			<label for="SliderFontSize">Font Size</label>
+			<input type="range" min="10" max="200" value="60" id="SliderFontSize" />
+			<label for="SliderForceStrength">Force Strength</label>
+			<input
+				type="range"
+				min="0"
+				max="0.5"
+				value="0.25"
+				step="0.005"
+				id="SliderForceStrength"
+			/>
+		</div>
+
+		<canvas id="canvas" resize></canvas>
+
+		<script src="app.js"></script>
+	</body>
+</html>
