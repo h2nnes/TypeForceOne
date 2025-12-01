@@ -7,12 +7,19 @@
 		<link rel="stylesheet" href="style.css" />
 
 		<!-- Paper.js -->
-		<script src="https://unpkg.com/paper@0.12.17/dist/paper-full.js"></script>
+		<script
+			type="text/javascript"
+			src="https://unpkg.com/paper@0.12.17/dist/paper-full.js"
+		></script>
 	</head>
 
 	<body>
 		<div id="controls">
-			<textarea id="inputText">Hallo Welt – zieh mich auseinander!</textarea
+			<textarea id="inputText">
+Die Galaktische Republik wird von Unruhen erschüttert. Die Besteuerung der Handelsrouten zu weit entfernten Sternensystemen ist der Auslöser.
+In der Hoffnung, die Angelegenheit durch eine Blockade mit mächtigen Kampfschiffen zu beseitigen, hat die unersättliche Handelsföderation jeglichen Transport zu dem kleinen Planeten Naboo eingestellt.
+Während der Kongreß der Republik endlose Debatten über diese beunruhigende Kette von Ereignissen führt, entsandte der Oberste Kanzler insgeheim zwei Jedi-Ritter, Wächter des Friedens und der Gerechtigkeit, um den Konflikt beizulegen....
+			</textarea
 			><br />
 			<button id="renderBtn">Render Text</button>
 			<button id="exportBtn">Export SVG</button>
@@ -27,10 +34,26 @@
 				step="0.005"
 				id="SliderForceStrength"
 			/>
+
+			<label for="SliderRadius">Mouse Radius</label>
+			<input type="range" min="10" max="200" value="120" id="SliderRadius" />
+
+			<span>
+				<input type="radio" id="push" name="force" value="push" checked />
+				<label for="push">PUSH</label>
+			</span>
+			<span>
+				<input type="radio" id="pull" name="force" value="pull" />
+				<label for="pull">PULL</label>
+			</span>
+			<span>
+				<input type="radio" id="spin" name="force" value="spin" />
+				<label for="spin">SPIN</label>
+			</span>
 		</div>
 
 		<canvas id="canvas" resize></canvas>
 
-		<script src="app.js"></script>
+		<script type="module" src="js/app.js"></script>
 	</body>
 </html>
