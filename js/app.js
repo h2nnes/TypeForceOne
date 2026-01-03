@@ -1,5 +1,5 @@
 import { exportSVG } from "./export.js";
-import { applyPushForce, applyPullForce } from "./force.js";
+import { applyPushForce, applyPullForce, applySpinForce } from "./force.js";
 
 // Init Paper.js
 paper.setup(document.getElementById("canvas"));
@@ -13,8 +13,9 @@ let fontColor = "white";
 let uiColor = "white";
 
 let draggingTextField = false;
-let dragOffset;
+let pointerGrabOffset; // offset between pointer and box when grabbed
 let resizeTextField = false;
+let initialTextFieldPosition; // Track position at start of drag
 
 // Cache DOM elements once
 const el = {
@@ -31,7 +32,7 @@ const el = {
 // ------------- TEXT BOX (Frame + Handle) ------------------
 
 let textField = new paper.Path.Rectangle({
-    point: [1000, 100],
+    point: [700, 100],
     size: [600, 700],
     strokeColor: uiColor,
     fillColor: "rgba(255, 255, 255, 0.01)",
@@ -39,9 +40,9 @@ let textField = new paper.Path.Rectangle({
 });
 
 // Handle unten rechts
-let handle = new paper.Path.Circle({
+let handle = new paper.Path.Rectangle({
     center: textField.bounds.bottomRight,
-    radius: 12,
+    size: [8, 8],
     fillColor: uiColor,
     strokeColor: uiColor,
     strokeWidth: 1
@@ -56,6 +57,7 @@ let mouseRadiusCircle = new paper.Path.Circle({
     strokeWidth: 1,
     dashArray: [4, 4]
 });
+
 
 // Initialize mouseRadius from slider and wire live updates (if slider exists)
 if (el.sliderRadius) {
@@ -84,6 +86,41 @@ if (el.sliderRadius) {
             }
         }
     });
+}
+
+// --- Wheel / trackpad support: adjust mouseRadius with scroll gestures ---
+const minRadius = parseFloat((el.sliderRadius && el.sliderRadius.min) || 10);
+const maxRadius = parseFloat((el.sliderRadius && el.sliderRadius.max) || 200);
+const wheelStep = 3; // change per wheel "tick"
+
+const canvasEl = document.getElementById('canvas');
+if (canvasEl) {
+    canvasEl.addEventListener('wheel', (event) => {
+        // Prevent the page from scrolling when adjusting radius
+        event.preventDefault();
+
+        // On most devices: deltaY < 0 => scroll up (increase), deltaY > 0 => scroll down (decrease)
+        const delta = event.deltaY < 0 ? wheelStep : -wheelStep;
+        let newRadius = Math.round(Math.max(minRadius, Math.min(maxRadius, mouseRadius + delta)));
+
+        if (newRadius !== mouseRadius) {
+            const currentRadius = (mouseRadiusCircle && mouseRadiusCircle.bounds) ? mouseRadiusCircle.bounds.width / 2 : mouseRadius || 1;
+            const factor = currentRadius > 0 ? newRadius / currentRadius : 1;
+            mouseRadius = newRadius;
+
+            if (mouseRadiusCircle && typeof mouseRadiusCircle.scale === 'function') {
+                mouseRadiusCircle.scale(factor);
+                mouseRadiusCircle.strokeWidth = 1;
+                mouseRadiusCircle.dashArray = [4, 4];
+                paper.project.activeLayer.addChild(mouseRadiusCircle);
+                mouseRadiusCircle.bringToFront();
+                paper.view.update();
+            }
+
+            // keep the slider in sync if present
+            if (el.sliderRadius) el.sliderRadius.value = mouseRadius;
+        }
+    }, { passive: false });
 }
 
 
@@ -162,18 +199,18 @@ function renderText() {
                 fillColor: fontColor
             });
             letters.push(letter);
+            // Initialize offset to zero (no force displacement yet)
+            letter.data.offset = new paper.Point(0, 0);
             x += letter.bounds.width;
         }
 
         // Leerzeichen hinzufügen
         x += new paper.PointText({ content: " ", fontSize }).bounds.width;
     }
-
-
-
 }
 
 renderText();
+
 
 
 // ---------- ZENTRALE MOUSE-HANDLER mittels hitTest (robust) ----------
@@ -189,15 +226,13 @@ paper.view.onMouseDown = function(event) {
         if (hit.item === handle || handle.contains(event.point)) {
             // Beginne Resizing
             resizeTextField = true;
-            console.log("Handle");
             return;
         }
         // Falls Klick auf das Feld (aber nicht auf Handle) → Drag
         if (hit.item === textField || textField.contains(event.point)) {
             draggingTextField = true;
-            // Offset merken, damit das Feld nicht springt
-            dragOffset = textField.position.subtract(event.point);
-            console.log("textField");
+            pointerGrabOffset = textField.position.subtract(event.point);
+            initialTextFieldPosition = textField.position.clone(); // Store position for letter offset calculation
             return;
         }
     }
@@ -239,20 +274,35 @@ paper.view.onMouseDrag = function(event) {
 
     // Wenn wir gerade draggen (verschieben)
     if (draggingTextField) {
-        textField.position = event.point.add(dragOffset);
+        textField.position = event.point.add(pointerGrabOffset);
         handle.position = textField.bounds.bottomRight;
 
-        // Text an neue Position anpassen (die Box-Position hat sich geändert)
-        renderText();
+        paper.view.update();
         return;
     }
 };
 
 paper.view.onMouseUp = function(event) {
-    // beende beides
+
+    if (draggingTextField) {
+        // Apply the drag translation to all letters to finalize the movement
+        const dragTranslation = textField.position.subtract(initialTextFieldPosition);
+        applyDragTranslationToLetters(dragTranslation);
+    }
+    
     draggingTextField = false;
     resizeTextField = false;
 };
+
+
+// Apply a drag delta to every letter (keeps force-induced offsets intact)
+function applyDragTranslationToLetters(dragTranslation) {
+    if (!dragTranslation) return;
+    if (dragTranslation.x === 0 && dragTranslation.y === 0) return;
+    for (let letter of letters) {
+        letter.position = letter.position.add(dragTranslation);
+    }
+}
 
 
 // ---------- FORCE SYSTEM (Push Away) ----------------
@@ -266,6 +316,8 @@ paper.view.onMouseMove = function (event) {
     // Apply the selected force type
     if (forceType === "pull") {
         applyPullForce(letters, event.point, mouseRadius, forceStrength);
+    } else if (forceType === "spin") {
+        applySpinForce(letters, event.point, mouseRadius);
     } else {
         applyPushForce(letters, event.point, mouseRadius, forceStrength);
     }
