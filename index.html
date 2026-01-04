@@ -15,12 +15,6 @@
 
 	<body>
 		<div id="controls">
-			<textarea id="inputText">
-Die Galaktische Republik wird von Unruhen erschüttert. Die Besteuerung der Handelsrouten zu weit entfernten Sternensystemen ist der Auslöser.
-In der Hoffnung, die Angelegenheit durch eine Blockade mit mächtigen Kampfschiffen zu beseitigen, hat die unersättliche Handelsföderation jeglichen Transport zu dem kleinen Planeten Naboo eingestellt.
-Während der Kongreß der Republik endlose Debatten über diese beunruhigende Kette von Ereignissen führt, entsandte der Oberste Kanzler insgeheim zwei Jedi-Ritter, Wächter des Friedens und der Gerechtigkeit, um den Konflikt beizulegen....
-			</textarea
-			><br />
 			<button id="renderBtn">Render Text</button>
 			<button id="exportBtn">Export SVG</button>
 			<label for="SliderFontSize">Font Size</label>
@@ -69,8 +63,14 @@ Während der Kongreß der Republik endlose Debatten über diese beunruhigende Ke
 			</span>
 		</div>
 
+		<textarea
+			id="overlayTextarea"
+			placeholder="Die Galaktische Republik wird von Unruhen erschüttert. Die Besteuerung der Handelsrouten zu weit entfernten Sternensystemen ist der Auslöser. In der Hoffnung, die Angelegenheit durch eine Blockade mit mächtigen Kampfschiffen zu beseitigen, hat die unersättliche Handelsföderation jeglichen Transport zu dem kleinen Planeten Naboo eingestellt. Während der Kongreß der Republik endlose Debatten über diese beunruhigende Kette von Ereignissen führt, entsandte der Oberste Kanzler insgeheim zwei Jedi-Ritter, Wächter des Friedens und der Gerechtigkeit, um den Konflikt beizulegen...."
+			spellcheck="false"
+		></textarea>
+
 		<canvas id="canvas" resize></canvas>
 
-		<script type="module" src="js/app.js"></script>
+		<script type="module" src="js/main.js"></script>
 	</body>
 </html>
