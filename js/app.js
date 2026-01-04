@@ -1,5 +1,5 @@
 import { exportSVG } from "./export.js";
-import { applyPushForce, applyPullForce, applySpinForce } from "./force.js";
+import { applyCirclePushForce, applyCirclePullForce, applyCircleSpinForce, applySquarePushForce, applySquarePullForce, applySquareSpinForce } from "./force.js";
 
 // Init Paper.js
 paper.setup(document.getElementById("canvas"));
@@ -8,6 +8,7 @@ let letters = [];
 let fontSize = 60;
 let forceStrength = 0.08;
 let mouseRadius = 120;
+let shapeMode = 'circle'; // 'circle' or 'square'
 let forceType = "push"; // "push" or "pull" 
 let fontColor = "white";
 let uiColor = "white";
@@ -16,6 +17,7 @@ let draggingTextField = false;
 let pointerGrabOffset; // offset between pointer and box when grabbed
 let resizeTextField = false;
 let initialTextFieldPosition; // Track position at start of drag
+let shiftConstrainedShapeStart = null; // Track initial position when Shift-constraining shapes
 
 // Cache DOM elements once
 const el = {
@@ -58,6 +60,43 @@ let mouseRadiusCircle = new paper.Path.Circle({
     dashArray: [4, 4]
 });
 
+// Visual for square area
+let mouseRadiusSquare = new paper.Path.Rectangle({
+    center: [0, 0],
+    size: [mouseRadius * 2, mouseRadius * 2],
+    strokeColor: uiColor,
+    strokeWidth: 1,
+    dashArray: [4, 4]
+});
+mouseRadiusSquare.visible = false;
+
+// forceDirection: 'left' | 'right' | 'up' | 'down'
+mouseRadiusSquare.forceDirection = 'right';
+
+function updateSquareCursor() {
+    if (shapeMode === 'square' && mouseRadiusSquare.forceDirection) {
+        const direction = mouseRadiusSquare.forceDirection;
+        const cursorMap = {
+            'right': 'e-resize',
+            'left': 'w-resize',
+            'down': 's-resize',
+            'up': 'n-resize'
+        };
+        canvasEl.style.cursor = cursorMap[direction] || 'default';
+    } else {
+        canvasEl.style.cursor = 'default';
+    }
+}
+
+mouseRadiusSquare.cycleForceDirection = function() {
+    const order = ['right', 'down', 'left', 'up'];
+    const idx = order.indexOf(this.forceDirection);
+    const next = order[(idx + 1) % order.length];
+    this.forceDirection = next;
+    console.log('mouseRadiusSquare.forceDirection ->', next);
+    updateSquareCursor();
+};
+
 
 // Initialize mouseRadius from slider and wire live updates (if slider exists)
 if (el.sliderRadius) {
@@ -83,6 +122,12 @@ if (el.sliderRadius) {
                 paper.project.activeLayer.addChild(mouseRadiusCircle);
                 mouseRadiusCircle.bringToFront();
                 paper.view.update();
+            }
+            // also scale square
+            if (mouseRadiusSquare && typeof mouseRadiusSquare.scale === 'function') {
+                mouseRadiusSquare.scale(factor);
+                mouseRadiusSquare.strokeWidth = 1;
+                mouseRadiusSquare.dashArray = [4, 4];
             }
         }
     });
@@ -117,6 +162,13 @@ if (canvasEl) {
                 paper.view.update();
             }
 
+            // also scale square
+            if (mouseRadiusSquare && typeof mouseRadiusSquare.scale === 'function') {
+                mouseRadiusSquare.scale(factor);
+                mouseRadiusSquare.strokeWidth = 1;
+                mouseRadiusSquare.dashArray = [4, 4];
+            }
+
             // keep the slider in sync if present
             if (el.sliderRadius) el.sliderRadius.value = mouseRadius;
         }
@@ -128,10 +180,10 @@ if (canvasEl) {
 
 // ---------- Hilfsfunktionen: nur Buchstaben entfernen (nicht textField/handle) ----------
 function clearLettersOnly() {
-    // Entferne alle children, die nicht textField, handle oder mouseRadiusCircle sind
+    // Entferne alle children, die nicht textField, handle oder mouseRadius visuals sind
     // (falls du andere UI-Items im Layer hast, erweitere die Prüfung)
     for (let child of paper.project.activeLayer.children.slice()) {
-        if (child === textField || child === handle || child === mouseRadiusCircle) continue;
+        if (child === textField || child === handle || child === mouseRadiusCircle || child === mouseRadiusSquare) continue;
         // entferne Letter-Objekte; sichere Vorsicht falls child schon entfernt wurde
         try { child.remove(); } catch (e) {}
     }
@@ -236,6 +288,11 @@ paper.view.onMouseDown = function(event) {
             return;
         }
     }
+
+    // If in square mode, left-click cycles force direction
+    if (shapeMode === 'square' && mouseRadiusSquare && typeof mouseRadiusSquare.cycleForceDirection === 'function') {
+        mouseRadiusSquare.cycleForceDirection();
+    }
 };
 
 
@@ -305,21 +362,58 @@ function applyDragTranslationToLetters(dragTranslation) {
 }
 
 
-// ---------- FORCE SYSTEM (Push Away) ----------------
-
 paper.view.onMouseMove = function (event) {
+    let shapePos = event.point;
 
-    mouseRadiusCircle.position = event.point;
+    // If Shift is held, constrain shape movement to axis-aligned (horizontal or vertical)
+    if (event.modifiers && event.modifiers.shift) {
+        // Initialize constraint start position on first Shift-constrained move
+        if (!shiftConstrainedShapeStart) {
+            shiftConstrainedShapeStart = event.point.clone();
+        }
+        const delta = event.point.subtract(shiftConstrainedShapeStart);
+        // Determine dominant axis: if |dx| > |dy|, lock to horizontal; else lock to vertical
+        if (Math.abs(delta.x) > Math.abs(delta.y)) {
+            // Horizontal: keep start Y, use current X
+            shapePos = new paper.Point(event.point.x, shiftConstrainedShapeStart.y);
+        } else {
+            // Vertical: keep start X, use current Y
+            shapePos = new paper.Point(shiftConstrainedShapeStart.x, event.point.y);
+        }
+    } else {
+        // Reset constraint tracking when Shift is released
+        shiftConstrainedShapeStart = null;
+    }
+
+    mouseRadiusCircle.position = shapePos;
+    mouseRadiusSquare.position = shapePos;
+
+    // Update cursor if in square mode
+    if (shapeMode === 'square') {
+        updateSquareCursor();
+    }
 
     forceStrength = parseFloat((el.sliderForce && el.sliderForce.value) || forceStrength) || forceStrength;
 
-    // Apply the selected force type
-    if (forceType === "pull") {
-        applyPullForce(letters, event.point, mouseRadius, forceStrength);
-    } else if (forceType === "spin") {
-        applySpinForce(letters, event.point, mouseRadius);
+    // Apply the selected force type based on shape mode
+    if (shapeMode === 'square') {
+        // Square wall-like forces
+        if (forceType === "pull") {
+            applySquarePullForce(letters, event.point, mouseRadius, forceStrength);
+        } else if (forceType === "spin") {
+            applySquareSpinForce(letters, event.point, mouseRadius);
+        } else {
+            applySquarePushForce(letters, event.point, mouseRadius, forceStrength, mouseRadiusSquare.forceDirection);
+        }
     } else {
-        applyPushForce(letters, event.point, mouseRadius, forceStrength);
+        // Circle radial forces
+        if (forceType === "pull") {
+            applyCirclePullForce(letters, event.point, mouseRadius, forceStrength);
+        } else if (forceType === "spin") {
+            applyCircleSpinForce(letters, event.point, mouseRadius);
+        } else {
+            applyCirclePushForce(letters, event.point, mouseRadius, forceStrength);
+        }
     }
 };
 
@@ -334,5 +428,17 @@ forceRadios.forEach(radio => {
     radio.addEventListener("change", (e) => {
         forceType = e.target.value;
         console.log("Force type changed to:", forceType);
+    });
+});
+
+// Wire shape radio buttons (circle / square)
+const shapeRadios = document.querySelectorAll('input[name="shape"]');
+shapeRadios.forEach(radio => {
+    radio.addEventListener("change", (e) => {
+        shapeMode = e.target.value;
+        mouseRadiusCircle.visible = (shapeMode === 'circle');
+        mouseRadiusSquare.visible = (shapeMode === 'square');
+        //updateSquareCursor();
+        console.log("Shape changed to:", shapeMode);
     });
 });
