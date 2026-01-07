@@ -11,9 +11,23 @@
  * @param {Number} forceStrength - Strength multiplier of the force
  */
 export function applyCirclePushForce(letters, mousePos, mouseRadius, forceStrength) {
+    const radiusSquared = mouseRadius * mouseRadius;
+    
     for (let l of letters) {
-        const dist = l.position.getDistance(mousePos);
-        if (dist < mouseRadius) {
+        // Cheap bounding box check FIRST (4 simple comparisons, no math)
+        if (l.position.x < mousePos.x - mouseRadius || 
+            l.position.x > mousePos.x + mouseRadius ||
+            l.position.y < mousePos.y - mouseRadius || 
+            l.position.y > mousePos.y + mouseRadius) continue;
+
+        // Calculate squared distance (no sqrt!)
+        const dx = l.position.x - mousePos.x;
+        const dy = l.position.y - mousePos.y;
+        const distSquared = dx * dx + dy * dy;
+        
+        if (distSquared < radiusSquared) {
+            // Only NOW calculate actual distance (once, when we know we need it)
+            const dist = Math.sqrt(distSquared);
             const force = (mouseRadius - dist) * forceStrength;
             const dir = l.position.subtract(mousePos).normalize();
             l.position = l.position.add(dir.multiply(force));
@@ -30,9 +44,26 @@ export function applyCirclePushForce(letters, mousePos, mouseRadius, forceStreng
  * @param {Number} forceStrength - Strength multiplier of the force
  */
 export function applyCirclePullForce(letters, mousePos, mouseRadius, forceStrength) {
+    const radiusSquared = mouseRadius * mouseRadius;
+    
     for (let l of letters) {
-        const dist = l.position.getDistance(mousePos);
-        if (dist < mouseRadius) {
+        // Cheap bounding box check FIRST (4 simple comparisons, no math)
+        if (l.position.x < mousePos.x - mouseRadius || 
+            l.position.x > mousePos.x + mouseRadius ||
+            l.position.y < mousePos.y - mouseRadius || 
+            l.position.y > mousePos.y + mouseRadius) 
+        {
+            continue;
+        }
+
+        // Calculate squared distance (no sqrt!)
+        const dx = l.position.x - mousePos.x;
+        const dy = l.position.y - mousePos.y;
+        const distSquared = dx * dx + dy * dy;
+
+        if (distSquared < radiusSquared) {
+            // Only NOW calculate actual distance (once, when we know we need it)
+            const dist = Math.sqrt(distSquared);
             const force = (mouseRadius - dist) * forceStrength;
             const dir = mousePos.subtract(l.position).normalize(); // opposite direction
             l.position = l.position.add(dir.multiply(force));
@@ -50,13 +81,26 @@ export function applyCirclePullForce(letters, mousePos, mouseRadius, forceStreng
  * @param {Number} forceStrength - Strength multiplier of the force
  */
 export function applyCircleSpinForce(letters, mousePos, mouseRadius, forceStrength) {
+    const radiusSquared = mouseRadius * mouseRadius;
+    
     for (let l of letters) {
-        const dist = l.position.getDistance(mousePos);
-        if (dist < mouseRadius) {
-            // Calculate vector from letter to mouse
-            const vecToMouse = mousePos.subtract(l.position);
+        // Cheap bounding box check FIRST (4 simple comparisons, no math)
+        if (l.position.x < mousePos.x - mouseRadius || 
+            l.position.x > mousePos.x + mouseRadius ||
+            l.position.y < mousePos.y - mouseRadius || 
+            l.position.y > mousePos.y + mouseRadius) continue;
+        
+        // Calculate squared distance (no sqrt!)
+        const dx = l.position.x - mousePos.x;
+        const dy = l.position.y - mousePos.y;
+        const distSquared = dx * dx + dy * dy;
+        
+        if (distSquared < radiusSquared) {
+            // Only NOW calculate actual distance (once, when we know we need it)
+            const dist = Math.sqrt(distSquared);
             // Calculate angle in degrees (Paper.js uses degrees for rotation)
-            const angle = Math.atan2(vecToMouse.y, vecToMouse.x) * (180 / Math.PI);
+            // We already have dx, dy from distance calculation
+            const angle = Math.atan2(-dy, -dx) * (180 / Math.PI);
             
             // Calculate rotation strength: closer to center = stronger (1.0), farther = weaker (0.0)
             const rotationStrength = 1 - (dist / mouseRadius);

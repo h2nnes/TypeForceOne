@@ -49,9 +49,7 @@ export function initControls() {
                     state.mouseRadiusCircle.dashArray = [4, 4];
                     // ensure it's present and visible
                     paper.project.activeLayer.addChild(state.mouseRadiusCircle);
-                    state.mouseRadiusCircle.bringToFront();
-                    paper.view.update();
-                }
+                    state.mouseRadiusCircle.bringToFront();                }
                 // also scale square
                 if (state.mouseRadiusSquare && typeof state.mouseRadiusSquare.scale === 'function') {
                     state.mouseRadiusSquare.scale(factor);
@@ -87,7 +85,6 @@ export function initControls() {
                     state.mouseRadiusCircle.dashArray = [4, 4];
                     paper.project.activeLayer.addChild(state.mouseRadiusCircle);
                     state.mouseRadiusCircle.bringToFront();
-                    paper.view.update();
                 }
 
                 if (state.mouseRadiusSquare && typeof state.mouseRadiusSquare.scale === 'function') {

@@ -47,6 +47,14 @@ export function initInteractions() {
             return;
         }
 
+        // In square mode, any left-click (except on the handle) cycles the force direction and stops here
+        if (state.shapeMode === 'square' && (!hit || hit.item !== state.handle)) {
+            if (state.mouseRadiusSquare && typeof state.mouseRadiusSquare.cycleForceDirection === 'function') {
+                state.mouseRadiusSquare.cycleForceDirection();
+                return;
+            }
+        }
+
         if (hit) {
             if (hit.item === state.handle || state.handle.contains(event.point)) {
                 // Beginne Resizing
@@ -59,13 +67,6 @@ export function initInteractions() {
                 state.pointerGrabOffset = state.textField.position.subtract(event.point);
                 state.initialTextFieldPosition = state.textField.position.clone(); // Store position for letter offset calculation
                 return;
-            }
-        }
-        
-        // In square mode, cycle force direction when clicking outside handle and textField
-        if (state.shapeMode === 'square') {
-            if (state.mouseRadiusSquare && typeof state.mouseRadiusSquare.cycleForceDirection === 'function') {
-                state.mouseRadiusSquare.cycleForceDirection();
             }
         }
     };
@@ -98,7 +99,6 @@ export function initInteractions() {
 
             // Reflow text and force a redraw so the change is visible immediately
             renderText();
-            paper.view.update();
             return;
         }
 
@@ -107,7 +107,6 @@ export function initInteractions() {
             state.textField.position = event.point.add(state.pointerGrabOffset);
             state.handle.position = state.textField.bounds.bottomRight;
 
-            paper.view.update();
             return;
         }
     };
@@ -124,62 +123,82 @@ export function initInteractions() {
         state.draggingTextField = false;
         state.resizeTextField = false;
     };
+    // Throttle mouse updates using requestAnimationFrame
+    let isForceUpdateScheduled = false;
+    let lastMousePoint = null;
+    let lastModifiers = null;
 
     paper.view.onMouseMove = function (event) {
         if (state.textEditMode) {
             return;
         }
-        let shapePos = event.point;
 
-        // If Shift is held, constrain shape movement to axis-aligned (horizontal or vertical)
-        if (event.modifiers && event.modifiers.shift) {
-            // Initialize constraint start position on first Shift-constrained move
-            if (!state.shiftConstrainedShapeStart) {
-                state.shiftConstrainedShapeStart = event.point.clone();
-            }
-            const delta = event.point.subtract(state.shiftConstrainedShapeStart);
-            // Determine dominant axis: if |dx| > |dy|, lock to horizontal; else lock to vertical
-            if (Math.abs(delta.x) > Math.abs(delta.y)) {
-                // Horizontal: keep start Y, use current X
-                shapePos = new paper.Point(event.point.x, state.shiftConstrainedShapeStart.y);
+        // Store the latest mouse position and modifiers
+        lastMousePoint = event.point;
+        lastModifiers = event.modifiers;
+
+        // If an update is already scheduled, skip (wait for next frame)
+        if (isForceUpdateScheduled) return;
+
+        // Schedule the force update for next animation frame
+        isForceUpdateScheduled = true;
+        requestAnimationFrame(() => {
+            isForceUpdateScheduled = false;
+
+            if (!lastMousePoint) return;
+
+            let shapePos = lastMousePoint;
+
+            // If Shift is held, constrain shape movement to axis-aligned (horizontal or vertical)
+            if (lastModifiers && lastModifiers.shift) {
+                // Initialize constraint start position on first Shift-constrained move
+                if (!state.shiftConstrainedShapeStart) {
+                    state.shiftConstrainedShapeStart = lastMousePoint.clone();
+                }
+                const delta = lastMousePoint.subtract(state.shiftConstrainedShapeStart);
+                // Determine dominant axis: if |dx| > |dy|, lock to horizontal; else lock to vertical
+                if (Math.abs(delta.x) > Math.abs(delta.y)) {
+                    // Horizontal: keep start Y, use current X
+                    shapePos = new paper.Point(lastMousePoint.x, state.shiftConstrainedShapeStart.y);
+                } else {
+                    // Vertical: keep start X, use current Y
+                    shapePos = new paper.Point(state.shiftConstrainedShapeStart.x, lastMousePoint.y);
+                }
             } else {
-                // Vertical: keep start X, use current Y
-                shapePos = new paper.Point(state.shiftConstrainedShapeStart.x, event.point.y);
+                // Reset constraint tracking when Shift is released
+                state.shiftConstrainedShapeStart = null;
             }
-        } else {
-            // Reset constraint tracking when Shift is released
-            state.shiftConstrainedShapeStart = null;
-        }
 
-        state.mouseRadiusCircle.position = shapePos;
-        state.mouseRadiusSquare.position = shapePos;
+            state.mouseRadiusCircle.position = shapePos;
+            state.mouseRadiusSquare.position = shapePos;
 
-        // Update cursor if in square mode
-        if (state.shapeMode === 'square') {
-            updateSquareCursor();
-        }
+            // Update cursor if in square mode
+            if (state.shapeMode === 'square') {
+                updateSquareCursor();
+            }
 
-        state.forceStrength = parseFloat(state.el.sliderForce?.value || state.forceStrength) || state.forceStrength;
+            state.forceStrength = parseFloat(state.el.sliderForce?.value || state.forceStrength) || state.forceStrength;
 
-        // Apply the selected force type based on shape mode
-        if (state.shapeMode === 'square') {
-            // Square wall-like forces
-            if (state.forceType === "pull") {
-                applySquarePullForce(state.letters, event.point, state.mouseRadius, state.forceStrength);
-            } else if (state.forceType === "spin") {
-                applySquareSpinForce(state.letters, event.point, state.mouseRadius);
+            // Apply the selected force type based on shape mode
+            if (state.shapeMode === 'square') {
+                // Square wall-like forces
+                if (state.forceType === "pull") {
+                    applySquarePullForce(state.letters, shapePos, state.mouseRadius, state.forceStrength);
+                } else if (state.forceType === "spin") {
+                    applySquareSpinForce(state.letters, shapePos, state.mouseRadius);
+                } else {
+                    applySquarePushForce(state.letters, shapePos, state.mouseRadius, state.forceStrength, state.mouseRadiusSquare.forceDirection);
+                }
             } else {
-                applySquarePushForce(state.letters, event.point, state.mouseRadius, state.forceStrength, state.mouseRadiusSquare.forceDirection);
+                // Circle radial forces
+                if (state.forceType === "pull") {
+                    applyCirclePullForce(state.letters, shapePos, state.mouseRadius, state.forceStrength);
+                } else if (state.forceType === "spin") {
+                    applyCircleSpinForce(state.letters, shapePos, state.mouseRadius, state.forceStrength);
+                } else {
+                    applyCirclePushForce(state.letters, shapePos, state.mouseRadius, state.forceStrength);
+                }
             }
-        } else {
-            // Circle radial forces
-            if (state.forceType === "pull") {
-                applyCirclePullForce(state.letters, event.point, state.mouseRadius, state.forceStrength);
-            } else if (state.forceType === "spin") {
-                applyCircleSpinForce(state.letters, event.point, state.mouseRadius, state.forceStrength);
-            } else {
-                applyCirclePushForce(state.letters, event.point, state.mouseRadius, state.forceStrength);
-            }
-        }
+        });
     };
 }
