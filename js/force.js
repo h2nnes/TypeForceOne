@@ -22,7 +22,6 @@ export function applyCirclePushForce(letters, mousePos, mouseRadius, forceStreng
 }
 
 
-
 /**
  * Apply circle pull force: letters are pulled towards the mouse (opposite of push)
  * @param {Array} letters - Array of Paper.js PointText items
@@ -48,8 +47,9 @@ export function applyCirclePullForce(letters, mousePos, mouseRadius, forceStreng
  * @param {Array} letters - Array of Paper.js PointText items
  * @param {Point} mousePos - Current mouse position
  * @param {Number} mouseRadius - Radius within which force is applied
+ * @param {Number} forceStrength - Strength multiplier of the force
  */
-export function applyCircleSpinForce(letters, mousePos, mouseRadius) {
+export function applyCircleSpinForce(letters, mousePos, mouseRadius, forceStrength) {
     for (let l of letters) {
         const dist = l.position.getDistance(mousePos);
         if (dist < mouseRadius) {
@@ -63,7 +63,7 @@ export function applyCircleSpinForce(letters, mousePos, mouseRadius) {
             
             // Interpolate between current rotation and target angle based on strength
             const currentRotation = l.rotation || 0;
-            l.rotation = currentRotation + (angle - currentRotation) * rotationStrength;
+            l.rotation = currentRotation + (angle - currentRotation) * (rotationStrength * forceStrength);
         }
     }
 }
@@ -104,7 +104,10 @@ export function applySquarePushForce(letters, mousePos, mouseRadius, forceStreng
         // Scale by a modest fraction of mouseRadius to keep visible effect without being overpowering
         const baseScale = mouseRadius * 0.5;
 
-        // Sharper ramp near the opposite edge: strength grows quadratically with distance/span
+        // ====== EFFECT OPTIONS - Comment/Uncomment to try different effects ======
+        // These change the fundamental behavior, not just the curve!
+
+        // OPTION 1: Standard Push - Quadratic falloff from edge to edge
         if (dir === 'right') {
             const distance = right - px; // 0 at right edge (pushing), span at left edge
             const t = Math.max(0, Math.min(1, distance / span));
@@ -126,6 +129,235 @@ export function applySquarePushForce(letters, mousePos, mouseRadius, forceStreng
             const strength = t * t;
             if (strength > 0) fy = -strength * baseScale * forceStrength; // push -y
         }
+
+        // OPTION 2: Linear - constant growth rate, evenly distributed
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t;
+        //     if (strength > 0) fx = strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t;
+        //     if (strength > 0) fx = -strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t;
+        //     if (strength > 0) fy = strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t;
+        //     if (strength > 0) fy = -strength * baseScale * forceStrength;
+        // }
+
+        // OPTION 3: Cubic - very slow start, explosive acceleration at opposite edge
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t * t;
+        //     if (strength > 0) fx = strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t * t;
+        //     if (strength > 0) fx = -strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t * t;
+        //     if (strength > 0) fy = strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t * t;
+        //     if (strength > 0) fy = -strength * baseScale * forceStrength;
+        // }
+
+        // OPTION 4: Inverse Quadratic (ease-out) - fast start, slows down toward opposite edge
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = 1 - (1 - t) * (1 - t);
+        //     if (strength > 0) fx = strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = 1 - (1 - t) * (1 - t);
+        //     if (strength > 0) fx = -strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = 1 - (1 - t) * (1 - t);
+        //     if (strength > 0) fy = strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = 1 - (1 - t) * (1 - t);
+        //     if (strength > 0) fy = -strength * baseScale * forceStrength;
+        // }
+
+        // OPTION 5: Sine Wave (smooth ease-in-out) - smoothest acceleration/deceleration
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (1 - Math.cos(t * Math.PI)) / 2;
+        //     if (strength > 0) fx = strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (1 - Math.cos(t * Math.PI)) / 2;
+        //     if (strength > 0) fx = -strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (1 - Math.cos(t * Math.PI)) / 2;
+        //     if (strength > 0) fy = strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (1 - Math.cos(t * Math.PI)) / 2;
+        //     if (strength > 0) fy = -strength * baseScale * forceStrength;
+        // }
+
+        // OPTION 6: Exponential - dramatic curve, very strong near opposite edge
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (Math.exp(t * 3) - 1) / (Math.exp(3) - 1); // normalized exponential
+        //     if (strength > 0) fx = strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (Math.exp(t * 3) - 1) / (Math.exp(3) - 1);
+        //     if (strength > 0) fx = -strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (Math.exp(t * 3) - 1) / (Math.exp(3) - 1);
+        //     if (strength > 0) fy = strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = (Math.exp(t * 3) - 1) / (Math.exp(3) - 1);
+        //     if (strength > 0) fy = -strength * baseScale * forceStrength;
+        // }
+
+
+
+        // ====== ALTERNATIVE EFFECTS (not just distance-based) ======
+
+        // OPTION 9: Wave Bands - creates multiple zones of alternating strength (creates visible bands)
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.abs(Math.sin(t * Math.PI * 3)) * t; // 3 waves across the span
+        //     if (strength > 0) fx = strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.abs(Math.sin(t * Math.PI * 3)) * t;
+        //     if (strength > 0) fx = -strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.abs(Math.sin(t * Math.PI * 3)) * t;
+        //     if (strength > 0) fy = strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.abs(Math.sin(t * Math.PI * 3)) * t;
+        //     if (strength > 0) fy = -strength * baseScale * forceStrength;
+        // }
+
+
+
+        // OPTION 11: Split Push - top half goes up, bottom half goes down (bidirectional)
+        // if (dir === 'right' || dir === 'left') {
+        //     const distance = (dir === 'right') ? (right - px) : (px - left);
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     // Split vertically: above center = push up, below center = push down
+        //     const verticalDist = Math.abs(py - cy);
+        //     fy = (py > cy ? 1 : -1) * strength * baseScale * forceStrength;
+        // } else if (dir === 'down' || dir === 'up') {
+        //     const distance = (dir === 'down') ? (bottom - py) : (py - top);
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     // Split horizontally: right of center = push right, left of center = push left
+        //     fx = (px > cx ? 1 : -1) * strength * baseScale * forceStrength;
+        // }
+
+
+        // OPTION 13: Spiral Push - rotates push direction around center (creates vortex)
+        // if (dir === 'right' || dir === 'left') {
+        //     const distance = (dir === 'right') ? (right - px) : (px - left);
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     // Tangential force (perpendicular to radius)
+        //     const angle = Math.atan2(dy, dx);
+        //     fx = -Math.sin(angle) * strength * baseScale * forceStrength;
+        //     fy = Math.cos(angle) * strength * baseScale * forceStrength;
+        // } else if (dir === 'down' || dir === 'up') {
+        //     const distance = (dir === 'down') ? (bottom - py) : (py - top);
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     const angle = Math.atan2(dy, dx);
+        //     fx = -Math.sin(angle) * strength * baseScale * forceStrength;
+        //     fy = Math.cos(angle) * strength * baseScale * forceStrength;
+        // }
+
+        // OPTION 14: Random Jitter - random displacement scaled by distance (chaotic scatter)
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     fx = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        //     fy = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     fx = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        //     fy = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     fx = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        //     fy = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = t * t;
+        //     fx = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        //     fy = (Math.random() - 0.5) * 2 * strength * baseScale * forceStrength;
+        // }
+
+        // OPTION 15: Peak at Center - strongest in middle, weak at both edges (bell curve)
+        // if (dir === 'right') {
+        //     const distance = right - px;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.sin(t * Math.PI); // bell curve peaking at t=0.5
+        //     if (strength > 0) fx = strength * baseScale * forceStrength;
+        // } else if (dir === 'left') {
+        //     const distance = px - left;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.sin(t * Math.PI);
+        //     if (strength > 0) fx = -strength * baseScale * forceStrength;
+        // } else if (dir === 'down') {
+        //     const distance = bottom - py;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.sin(t * Math.PI);
+        //     if (strength > 0) fy = strength * baseScale * forceStrength;
+        // } else if (dir === 'up') {
+        //     const distance = py - top;
+        //     const t = Math.max(0, Math.min(1, distance / span));
+        //     const strength = Math.sin(t * Math.PI);
+        //     if (strength > 0) fy = -strength * baseScale * forceStrength;
+        // }
 
         if (fx !== 0 || fy !== 0) {
             l.position = l.position.add(new paper.Point(fx, fy));
