@@ -18,6 +18,10 @@ export const state = {
     
     // UI styling
     uiColor: "white",
+
+    // Typography adjustments
+    lineHeightFactor: 1.25, // multiplier applied to fontSize for line spacing
+    trackingEm: 0, // additional spacing between glyphs in em (multiples of fontSize)
     
     // Drag & interaction state
     draggingTextField: false,
@@ -26,6 +30,10 @@ export const state = {
     initialTextFieldPosition: null,
     shiftConstrainedShapeStart: null,
     textEditMode: false,
+    selectionMode: false,
+    // Last known mouse position and modifiers (Paper.Point / object)
+    lastMousePoint: null,
+    lastMouseModifiers: null,
     
     // Paper.js objects (set after initialization)
     textField: null,

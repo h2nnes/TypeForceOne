@@ -34,20 +34,32 @@ export function renderText() {
     const startX = state.textField.bounds.left + 10;
     const startY = state.textField.bounds.top + 10; // top of the line (we'll compute baseline from this)
     const maxWidth = state.textField.bounds.width - 20;
-    const lineHeight = state.fontSize * 1.25;
+    const lineHeight = state.fontSize * (state.lineHeightFactor || 1.25);
+
+    // compute tracking in pixels (em → px)
+    const trackingPx = (state.trackingEm || 0) * state.fontSize;
+
+    // helper: compute width of a string when rendered with current fontSize including tracking
+    function computeTextWidth(str) {
+        if (!str) return 0;
+        let w = 0;
+        for (let i = 0; i < str.length; i++) {
+            const ch = str[i];
+            const tmp = new paper.PointText({ point: [0,0], content: ch, fontSize: state.fontSize });
+            w += tmp.bounds.width;
+            tmp.remove();
+            // add tracking between characters (not after last)
+            if (i < str.length - 1) w += trackingPx;
+        }
+        return w;
+    }
 
     let x = startX;
     let y = startY;
 
     for (let w of words) {
-        let testWord = new paper.PointText({
-            point: [0, 0],
-            content: w,
-            fontSize: state.fontSize
-        });
-
-        let wordWidth = testWord.bounds.width;
-        testWord.remove();
+        // measure word width including tracking
+        let wordWidth = computeTextWidth(w);
 
         // Zeilenumbruch
         if (x + wordWidth > startX + maxWidth) {
@@ -62,7 +74,8 @@ export function renderText() {
         from the top `y` and use that for the PointText `point` Y coordinate. */
         
         const baselineOffset = state.fontSize * 0.85; // tweak this multiplier if needed per font
-        for (let c of w) {
+        for (let i = 0; i < w.length; i++) {
+            const c = w[i];
             let letter = new paper.PointText({
                 point: [x, y + baselineOffset],
                 content: c,
@@ -72,11 +85,15 @@ export function renderText() {
             state.letters.push(letter);
             // Initialize offset to zero (no force displacement yet)
             letter.data.offset = new paper.Point(0, 0);
-            x += letter.bounds.width;
+            // advance x by glyph width plus tracking
+            x += letter.bounds.width + trackingPx;
         }
 
-        // Leerzeichen hinzufügen
-        x += new paper.PointText({ content: " ", fontSize: state.fontSize }).bounds.width;
+        // Leerzeichen hinzufügen (include tracking after space as well)
+        const spaceW = computeTextWidth(" ");
+        x += spaceW + trackingPx;
+
+        console.log(trackingPx);
     }
 }
 

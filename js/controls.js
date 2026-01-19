@@ -99,6 +99,34 @@ export function initControls() {
         }, { passive: false });
     }
 
+    // --- Line Height Slider ---
+    const sliderLineHeight = document.getElementById('SliderLineHeight');
+    if (sliderLineHeight) {
+        const initial = parseFloat(sliderLineHeight.value);
+        if (!isNaN(initial)) state.lineHeightFactor = initial;
+        sliderLineHeight.addEventListener('input', (e) => {
+            const v = parseFloat(e.target.value);
+            if (!isNaN(v)) {
+                state.lineHeightFactor = v;
+                renderText();
+            }
+        });
+    }
+
+    // --- Tracking Slider ---
+    const sliderTracking = document.getElementById('SliderTracking');
+    if (sliderTracking) {
+        const initialEm = parseFloat(sliderTracking.value);
+        if (!isNaN(initialEm)) state.trackingEm = initialEm;
+        sliderTracking.addEventListener('input', (e) => {
+            const v = parseFloat(e.target.value);
+            if (!isNaN(v)) {
+                state.trackingEm = v;
+                renderText();
+            }
+        });
+    }
+
     // --- Export and Render Buttons ---
     if (state.el.exportBtn) {
         state.el.exportBtn.addEventListener("click", () => exportSVG(paper, state.textField, state.handle, state.mouseRadiusCircle));
@@ -122,8 +150,9 @@ export function initControls() {
     shapeRadios.forEach(radio => {
         radio.addEventListener("change", (e) => {
             state.shapeMode = e.target.value;
-            state.mouseRadiusCircle.visible = (state.shapeMode === 'circle');
-            state.mouseRadiusSquare.visible = (state.shapeMode === 'square');
+            // Only show visuals if not in selection (no-force) mode
+            state.mouseRadiusCircle.visible = (!state.selectionMode && state.shapeMode === 'circle');
+            state.mouseRadiusSquare.visible = (!state.selectionMode && state.shapeMode === 'square');
             console.log("Shape changed to:", state.shapeMode);
         });
     });
@@ -134,11 +163,30 @@ export function initControls() {
         if (state.textEditMode) return;
 
         const key = e.key.toLowerCase();
+
+        if (key === 'v') {
+            // Enter selection (no-force) mode (single-use)
+            if (!state.selectionMode) {
+                state.selectionMode = true;
+                // Hide both visuals and set cursor to default
+                if (state.mouseRadiusCircle) state.mouseRadiusCircle.visible = false;
+                if (state.mouseRadiusSquare) state.mouseRadiusSquare.visible = false;
+                if (state.el.canvas) state.el.canvas.style.cursor = 'default';
+                console.log('Entered selection (no-force) mode');
+            }
+            // Do nothing when already in selection mode; exit happens with 'c' or 's'
         
-        if (key === 'c' && state.shapeMode !== 'circle') {
+
+        } else if (key === 'c') {
+            // Always switch to circle and exit selection mode
             state.shapeMode = 'circle';
+            state.selectionMode = false;
             state.mouseRadiusCircle.visible = true;
             state.mouseRadiusSquare.visible = false;
+            // Position visuals at last pointer so circle appears immediately
+            const posC = state.lastMousePoint || paper.view.center;
+            if (state.mouseRadiusCircle) state.mouseRadiusCircle.position = posC;
+            if (state.mouseRadiusSquare) state.mouseRadiusSquare.position = posC;
             // Reset cursor to default when switching to circle mode
             if (state.el.canvas) state.el.canvas.style.cursor = 'default';
             // Update radio button UI
@@ -146,17 +194,22 @@ export function initControls() {
             if (circleRadio) circleRadio.checked = true;
             console.log("Shape changed to: circle");
         } else if (key === 's') {
-            if (state.shapeMode !== 'square') {
-                // Switch to square mode
+            if (state.selectionMode || state.shapeMode !== 'square') {
+                // Switch to square mode (or just exit selection mode if already square)
                 state.shapeMode = 'square';
+                state.selectionMode = false;
                 state.mouseRadiusCircle.visible = false;
                 state.mouseRadiusSquare.visible = true;
+                // Position visuals at last pointer so square appears immediately
+                const posS = state.lastMousePoint || paper.view.center;
+                if (state.mouseRadiusCircle) state.mouseRadiusCircle.position = posS;
+                if (state.mouseRadiusSquare) state.mouseRadiusSquare.position = posS;
                 // Update radio button UI
                 const squareRadio = document.getElementById('shapeSquare');
                 if (squareRadio) squareRadio.checked = true;
                 console.log("Shape changed to: square");
             } else {
-                // Already in square mode - cycle through force directions
+                // Already in square mode and not in selection mode - cycle through force directions
                 if (state.mouseRadiusSquare && typeof state.mouseRadiusSquare.cycleForceDirection === 'function') {
                     state.mouseRadiusSquare.cycleForceDirection();
                 }

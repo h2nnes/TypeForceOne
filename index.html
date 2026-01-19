@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 	<head>
 		<meta charset="UTF-8" />
@@ -53,6 +53,26 @@
 				<input type="radio" id="push" name="force" value="push" checked />
 				<label for="push">PUSH</label>
 			</span>
+
+			<label for="SliderLineHeight">Line Height</label>
+			<input
+				type="range"
+				id="SliderLineHeight"
+				min="0.8"
+				max="2.0"
+				step="0.01"
+				value="1.25"
+			/>
+
+			<label for="SliderTracking">Tracking (em)</label>
+			<input
+				type="range"
+				id="SliderTracking"
+				min="-0.2"
+				max="1.0"
+				step="0.01"
+				value="0"
+			/>
 			<span>
 				<input type="radio" id="pull" name="force" value="pull" />
 				<label for="pull">PULL</label>

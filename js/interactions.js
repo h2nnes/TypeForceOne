@@ -33,6 +33,27 @@ export function initInteractions() {
         updateSquareCursor();
     };
 
+    // Inactivity handling: hide textField frame+handle after timeout when pointer stayed within textField
+    let inactivityTimeout = null;
+    const INACTIVITY_MS = 1000;
+
+    function scheduleInactivityCheck() {
+        if (inactivityTimeout) clearTimeout(inactivityTimeout);
+        inactivityTimeout = setTimeout(() => {
+            // Don't hide while editing text, dragging or resizing
+            if (state.textEditMode || state.draggingTextField || state.resizeTextField) return;
+            if (!state.textField) return;
+            // After inactivity, always hide the Paper frame (handle + textField).
+            // The frame will only be restored when the cursor moves inside the textField bounds.
+            try {
+                state.textField.visible = false;
+                state.handle.visible = false;
+            } catch (e) {
+                // bounds may be undefined during init; ignore
+            }
+        }, INACTIVITY_MS);
+    }
+
     // ---------- ZENTRALE MOUSE-HANDLER mittels hitTest (robust) ----------
     paper.view.onMouseDown = function(event) {
         // Prüfe, ob wir das Handle treffen (zuerst)
@@ -47,14 +68,6 @@ export function initInteractions() {
             return;
         }
 
-        // In square mode, any left-click (except on the handle) cycles the force direction and stops here
-        if (state.shapeMode === 'square' && (!hit || hit.item !== state.handle)) {
-            if (state.mouseRadiusSquare && typeof state.mouseRadiusSquare.cycleForceDirection === 'function') {
-                state.mouseRadiusSquare.cycleForceDirection();
-                return;
-            }
-        }
-
         if (hit) {
             if (hit.item === state.handle || state.handle.contains(event.point)) {
                 // Beginne Resizing
@@ -67,6 +80,13 @@ export function initInteractions() {
                 state.pointerGrabOffset = state.textField.position.subtract(event.point);
                 state.initialTextFieldPosition = state.textField.position.clone(); // Store position for letter offset calculation
                 return;
+            }
+        }
+        
+        // In square mode, cycle force direction when clicking outside handle and textField
+        if (state.shapeMode === 'square') {
+            if (state.mouseRadiusSquare && typeof state.mouseRadiusSquare.cycleForceDirection === 'function') {
+                state.mouseRadiusSquare.cycleForceDirection();
             }
         }
     };
@@ -125,17 +145,26 @@ export function initInteractions() {
     };
     // Throttle mouse updates using requestAnimationFrame
     let isForceUpdateScheduled = false;
-    let lastMousePoint = null;
-    let lastModifiers = null;
 
     paper.view.onMouseMove = function (event) {
-        if (state.textEditMode) {
-            return;
+        // Always remember latest pointer so mode switches can reposition visuals
+        state.lastMousePoint = event.point;
+        state.lastMouseModifiers = event.modifiers;
+
+        // Always (re)schedule inactivity check and restore frame if we move inside bounds
+        scheduleInactivityCheck();
+        if (state.textField && !state.textField.visible) {
+            try {
+                if (state.textField.bounds.contains(state.lastMousePoint)) {
+                    state.textField.visible = true;
+                    state.handle.visible = true;
+                }
+            } catch (e) {}
         }
 
-        // Store the latest mouse position and modifiers
-        lastMousePoint = event.point;
-        lastModifiers = event.modifiers;
+        if (state.textEditMode || state.selectionMode) {
+            return;
+        }
 
         // If an update is already scheduled, skip (wait for next frame)
         if (isForceUpdateScheduled) return;
@@ -145,24 +174,24 @@ export function initInteractions() {
         requestAnimationFrame(() => {
             isForceUpdateScheduled = false;
 
-            if (!lastMousePoint) return;
+            if (!state.lastMousePoint) return;
 
-            let shapePos = lastMousePoint;
+            let shapePos = state.lastMousePoint;
 
             // If Shift is held, constrain shape movement to axis-aligned (horizontal or vertical)
-            if (lastModifiers && lastModifiers.shift) {
+            if (state.lastMouseModifiers && state.lastMouseModifiers.shift) {
                 // Initialize constraint start position on first Shift-constrained move
                 if (!state.shiftConstrainedShapeStart) {
-                    state.shiftConstrainedShapeStart = lastMousePoint.clone();
+                    state.shiftConstrainedShapeStart = state.lastMousePoint.clone();
                 }
-                const delta = lastMousePoint.subtract(state.shiftConstrainedShapeStart);
+                const delta = state.lastMousePoint.subtract(state.shiftConstrainedShapeStart);
                 // Determine dominant axis: if |dx| > |dy|, lock to horizontal; else lock to vertical
                 if (Math.abs(delta.x) > Math.abs(delta.y)) {
                     // Horizontal: keep start Y, use current X
-                    shapePos = new paper.Point(lastMousePoint.x, state.shiftConstrainedShapeStart.y);
+                    shapePos = new paper.Point(state.lastMousePoint.x, state.shiftConstrainedShapeStart.y);
                 } else {
                     // Vertical: keep start X, use current Y
-                    shapePos = new paper.Point(state.shiftConstrainedShapeStart.x, lastMousePoint.y);
+                    shapePos = new paper.Point(state.shiftConstrainedShapeStart.x, state.lastMousePoint.y);
                 }
             } else {
                 // Reset constraint tracking when Shift is released
