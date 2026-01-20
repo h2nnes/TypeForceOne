@@ -15,77 +15,88 @@
 
 	<body>
 		<div id="controls">
-			<button id="renderBtn">Render Text</button>
-			<button id="exportBtn">Export SVG</button>
-			<label for="SliderFontSize">Font Size</label>
-			<input type="range" min="10" max="200" value="30" id="SliderFontSize" />
-			<label for="SliderForceStrength">Force Strength</label>
-			<input
-				type="range"
-				min="0"
-				max="0.3"
-				value="0.025"
-				step="0.005"
-				id="SliderForceStrength"
-			/>
+			<button class="toggle">
+				<span class="shape"></span>
+			</button>
 
-			<label for="SliderRadius">Mouse Radius</label>
-			<input type="range" min="10" max="200" value="120" id="SliderRadius" />
-
-			<label>Shape</label>
-			<span>
+			<div class="controls-inner">
+				<button id="renderBtn">RT</button>
+				<button id="exportBtn">SVG</button>
+				<label for="SliderFontSize">Font Size</label>
+				<input type="range" min="10" max="200" value="15" id="SliderFontSize" />
+				<label for="SliderForceStrength">Force Strength</label>
 				<input
-					type="radio"
-					id="shapeCircle"
-					name="shape"
-					value="circle"
-					checked
+					type="range"
+					min="0"
+					max="0.3"
+					value="0.025"
+					step="0.005"
+					id="SliderForceStrength"
 				/>
-				<label for="shapeCircle">Circle</label>
-			</span>
-			<span>
-				<input type="radio" id="shapeSquare" name="shape" value="square" />
-				<label for="shapeSquare">Square</label>
-			</span>
 
-			<label>Force Type</label>
-			<span>
-				<input type="radio" id="push" name="force" value="push" checked />
-				<label for="push">PUSH</label>
-			</span>
+				<label for="SliderRadius">Mouse Radius</label>
+				<input type="range" min="10" max="200" value="120" id="SliderRadius" />
 
-			<label for="SliderLineHeight">Line Height</label>
-			<input
-				type="range"
-				id="SliderLineHeight"
-				min="0.8"
-				max="2.0"
-				step="0.01"
-				value="1.25"
-			/>
+				<label for="SliderLineHeight">Line Height</label>
+				<input
+					type="range"
+					id="SliderLineHeight"
+					min="0.8"
+					max="2.0"
+					step="0.01"
+					value="1.25"
+				/>
 
-			<label for="SliderTracking">Tracking (em)</label>
-			<input
-				type="range"
-				id="SliderTracking"
-				min="-0.2"
-				max="1.0"
-				step="0.01"
-				value="0"
-			/>
-			<span>
-				<input type="radio" id="pull" name="force" value="pull" />
-				<label for="pull">PULL</label>
-			</span>
-			<span>
-				<input type="radio" id="spin" name="force" value="spin" />
-				<label for="spin">SPIN</label>
-			</span>
+				<label for="SliderTracking">Tracking (em)</label>
+				<input
+					type="range"
+					id="SliderTracking"
+					min="-0.2"
+					max="1.0"
+					step="0.01"
+					value="0"
+				/>
+
+				<label>Shape</label>
+				<span>
+					<input
+						type="radio"
+						id="shapeCircle"
+						name="shape"
+						value="circle"
+						checked
+					/>
+					<label for="shapeCircle">Circle</label>
+				</span>
+				<span>
+					<input type="radio" id="shapeSquare" name="shape" value="square" />
+					<label for="shapeSquare">Square</label>
+				</span>
+
+				<label>Force Type</label>
+				<span>
+					<input type="radio" id="push" name="force" value="push" checked />
+					<label for="push">PUSH</label>
+				</span>
+				<span>
+					<input type="radio" id="pull" name="force" value="pull" />
+					<label for="pull">PULL</label>
+				</span>
+				<span>
+					<input type="radio" id="spin" name="force" value="spin" />
+					<label for="spin">SPIN</label>
+				</span>
+
+				<div class="expandButton">
+					<button class="icon">F</button>
+					<input type="range" class="slider" />
+				</div>
+			</div>
 		</div>
 
 		<textarea
 			id="overlayTextarea"
-			placeholder="Die Galaktische Republik wird von Unruhen erschüttert. Die Besteuerung der Handelsrouten zu weit entfernten Sternensystemen ist der Auslöser. In der Hoffnung, die Angelegenheit durch eine Blockade mit mächtigen Kampfschiffen zu beseitigen, hat die unersättliche Handelsföderation jeglichen Transport zu dem kleinen Planeten Naboo eingestellt. Während der Kongreß der Republik endlose Debatten über diese beunruhigende Kette von Ereignissen führt, entsandte der Oberste Kanzler insgeheim zwei Jedi-Ritter, Wächter des Friedens und der Gerechtigkeit, um den Konflikt beizulegen...."
+			placeholder="Que odi dolupta estrum et odis quia nitempero officium eos dolent latios ut explandem recepre rnatusd antorem autem doles maximinulpa sam sum as et inimili cipsame ducilla quaspel iandit, que vent aut et quamenis dollorrum excerspis et anit lant harisit iberem que exerchil ius aut inimint iaeria dolupiet perit, to tem doluptatetur sequunt. Sed et as quibusant audae. Nobis nonsequae consequo cus. Oluptus et quis sendis con re pore simaximolor ma inum repro voluptas eos mi, soloressit qui conserum quas ex eum fugia venes intemporite volut idio berionsedia se nem et qui cus eos accusan itaturiae voloristrum lam, od eatur alit es expedi as a dolo in rerro militem quisque es evel imustibus voluptas moluptatum deniam, sitia non cus aut exceati aperita quistrum iduci is rest, quam dellese quisquatem. Nequos autatium que rerio. Xerae cum et vollorum fugit qui officae poribus venda nulles intotate ersped qui utatur aut aligent aut omnihit verumendisim as magnimus, audicidende minit, conserspe nobisqu amuscia volorro is consenita siminciatem volupta accum, etumquam, ab in cum core atet parum ad quo iur sinveliquo iust, officidic te sed qui dolore rem res ulpa sitae. Nullupicae quat unt qui doloratem is molorum eosae dolluptas nam eument, cum excessiti velitiat. Obit omnim ut abore poriore ptatibus eturia verferi ationsequas voluptate et repelias exces et landa dolorepedis nullo corem nobis intur, simus dolor ma es dolorit voluptum dolum quam, vent volorep tatibus molupta voleseq uistint aut facideb isciate eatur am rem sim dem. Nem illacerit, sus rati cupta nosamus sed quid quam et molore aut eosantis prempeliqui tem. Nam quibusae dolum alique diatis nimus sim acerume volorec atusam volore num es ma inienessim dollam sumet dolor aut ullore sequae volorum, odiciis sequibea iuscidis deriatur maiore dignate nonet et qui in cum esci aut doloremo officia dolo consequas alit es autam volo endit omnim sus pro blaboreperum re aut atur ad que natiunt ibusam, consequae num nimpele ndaecto iusapero cupta in num hilloreprat od mo et a que pa elenimporro etus idi doluptassent et aut aliquam simus sediat. Ra cust, ut quam, autatio berio quia iume pro invelenis ant. Unt labor aruptis erum aut reriber chillautem voluptio. Et quo doluptur, ut eos sima nes ducipsu ndiatestibus ent ut quo de nis eos nobisit aut vollectis dit quistiae et quiam facepudamus simpost, core ent vernatur alitemod mi, autemporit ium nonse sequo quiae liquunto earuptur, consequos dolores sequati orehendi offictum seque quiandae. Errum ni tecusap ictatiis isci dolorat. Magnis sunt aliquo cusaperrovid qui cusam eum rende pedi si dollace peritatiis alicia et quo te im aut volorpor aperspe nostios int hari sequasp elignitas ad quostis molorestrum rae occatatem es sequia volorum rempeli taquis minihit quo ipit lat aciis quo magnati recus."
 			spellcheck="false"
 		></textarea>
 
