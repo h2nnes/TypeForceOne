@@ -8,6 +8,7 @@ export const state = {
     letters: [],
     fontSize: 60,
     fontColor: "white",
+    fontFamily: "ABCDiatypeRoundedVariable",
     currentText: "",
     
     // Force system

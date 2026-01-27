@@ -45,7 +45,7 @@ export function renderText() {
         let w = 0;
         for (let i = 0; i < str.length; i++) {
             const ch = str[i];
-            const tmp = new paper.PointText({ point: [0,0], content: ch, fontSize: state.fontSize });
+            const tmp = new paper.PointText({ point: [0,0], content: ch, fontSize: state.fontSize, fontFamily: state.fontFamily });
             w += tmp.bounds.width;
             tmp.remove();
             // add tracking between characters (not after last)
@@ -80,6 +80,7 @@ export function renderText() {
                 point: [x, y + baselineOffset],
                 content: c,
                 fontSize: state.fontSize,
+                fontFamily: state.fontFamily,
                 fillColor: state.fontColor
             });
             state.letters.push(letter);

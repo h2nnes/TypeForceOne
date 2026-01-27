@@ -29,8 +29,8 @@ body {
 
   overflow: hidden;
   transition:
-    width 0.35s cubic-bezier(.34,1.56,.64,1),
-    height 0.35s cubic-bezier(.34,1.56,.64,1),
+    width 0.35s cubic-bezier(.25,1,.5,1),
+    height 0.35s cubic-bezier(.25,1,.5,1),
     border-radius 0.3s ease;
 }
 
@@ -53,7 +53,7 @@ body {
   transform: rotate(0deg) scale(1);
 
   transition:
-    border-radius 0.35s cubic-bezier(.34,1.56,.64,1),
+    border-radius 0.35s cubic-bezier(.25,1,.5,1),
     transform 0.25s ease;
 }
 
@@ -66,11 +66,9 @@ body.is-circle .shape {
 
 
 #controls:hover,
-#controls:focus-within {
+#controls:has(:focus-visible) {
   width: 220px;     /* an dein Layout anpassen */
   height: 90vh;     /* oder feste Höhe */
-
-  border-radius: 20px;
 }
 
 .controls-inner {
@@ -79,11 +77,11 @@ body.is-circle .shape {
 
   transition:
     opacity 0.2s ease,
-    transform 0.3s ease;
+    transform 0.3s cubic-bezier(.25,1,.5,1);
 }
 
 #controls:hover .controls-inner,
-#controls:focus-within .controls-inner {
+#controls:has(:focus-visible) .controls-inner {
   opacity: 1;
   transform: translateY(0);
 }
@@ -148,7 +146,7 @@ button {
 }
 
 .expandButton:hover,
-.expandButton:focus-within {
+.expandButton:has(:focus-visible) {
   width: 200px;                /* ausgefahrene Breite */
 }
 
@@ -176,7 +174,7 @@ button {
 }
 
 .expandButton:hover .slider,
-.expandButton:focus-within .slider {
+.expandButton:has(:focus-visible) .slider {
   opacity: 1;
   transform: translateX(0);
 }

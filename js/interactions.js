@@ -33,6 +33,37 @@ export function initInteractions() {
         updateSquareCursor();
     };
 
+    // Allow dropping a font file to use it for rendering
+    function setupFontDrop() {
+        const target = state.el.canvas || window;
+        const noop = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; };
+        ['dragenter', 'dragover'].forEach(evt => target.addEventListener(evt, noop));
+
+        target.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer?.files?.[0];
+            if (!file) return;
+            if (!/\.(ttf|otf|woff2?|ttc|otc)$/i.test(file.name)) return;
+
+            const fontName = file.name.replace(/\.[^/.]+$/, '');
+            const url = URL.createObjectURL(file);
+            try {
+                const face = new FontFace(fontName, `url(${url})`);
+                await face.load();
+                document.fonts.add(face);
+                state.fontFamily = fontName;
+                if (state.el.overlayTextarea) state.el.overlayTextarea.style.fontFamily = `'${fontName}', sans-serif`;
+                renderText();
+            } catch (err) {
+                console.error('Font load failed', err);
+            } finally {
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+        });
+    }
+
+    setupFontDrop();
+
     // Inactivity handling: hide textField frame+handle after timeout when pointer stayed within textField
     let inactivityTimeout = null;
     const INACTIVITY_MS = 1000;
